@@ -1,59 +1,56 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title>ACLDS</title>
-
-  <style>
-    body {
-      margin: 0;
-      background: black;
-      color: white;
-      text-align: center;
-      font-family: Arial;
-      padding-top: 100px;
-    }
-
-    button {
-      padding: 10px 20px;
-      border-radius: 20px;
-      border: none;
-      margin-top: 20px;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>ACLDs</title>
 </head>
 
-<body>
+<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
 
-  <h1>ACLDS</h1>
-  <p>🔥 التطبيق ديالك خدام</p>
+<h2>إضافة لاعب</h2>
 
-  <button onclick="goLogin()">تسجيل الدخول</button>
+<input type="text" id="nom" placeholder="اسم اللاعب"><br><br>
+<input type="number" id="age" placeholder="العمر"><br><br>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+<button onclick="ajouterJoueur()">إضافة</button>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
-      authDomain: "aclds-app.firebaseapp.com",
-      projectId: "aclds-app",
-      storageBucket: "aclds-app.appspot.com",
-      messagingSenderId: "391599013116",
-      appId: "1:391599013116:web:fef6ffb35d884990b9ab79"
-    };
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
-    try {
-      const app = initializeApp(firebaseConfig);
-      console.log("Firebase خدام ✅");
-    } catch (error) {
-      console.error("خطأ Firebase:", error);
-    }
+const firebaseConfig = {
+  apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
+  authDomain: "aclds-app.firebaseapp.com",
+  databaseURL: "https://aclds-app-default-rtdb.firebaseio.com/",
+  projectId: "aclds-app",
+  storageBucket: "aclds-app.appspot.com",
+  messagingSenderId: "391599013116",
+  appId: "1:391599013116:web:6cc068d28097a90bb9ab79"
+};
 
-    window.goLogin = function () {
-      window.location.href = "login.html";
-    };
-  </script>
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window.ajouterJoueur = function () {
+  const nom = document.getElementById("nom").value;
+  const age = document.getElementById("age").value;
+
+  if(nom === "" || age === ""){
+    alert("عمر الحقول ❗");
+    return;
+  }
+
+  push(ref(db, "joueurs"), {
+    nom: nom,
+    age: age
+  });
+
+  alert("تمت الإضافة ✅");
+
+  document.getElementById("nom").value = "";
+  document.getElementById("age").value = "";
+};
+</script>
 
 </body>
 </html>
