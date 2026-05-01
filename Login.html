@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
+  <title>تسجيل الدخول</title>
 
   <style>
     body {
@@ -10,20 +10,21 @@
       color: white;
       text-align: center;
       font-family: Arial;
-      padding-top: 100px;
+      margin-top: 100px;
     }
 
     input {
       display: block;
       margin: 10px auto;
       padding: 10px;
-      width: 200px;
-      border-radius: 10px;
+      width: 250px;
+      border-radius: 8px;
       border: none;
     }
 
     button {
       padding: 10px 20px;
+      margin: 5px;
       border-radius: 20px;
       border: none;
       cursor: pointer;
@@ -41,15 +42,15 @@
   <button onclick="login()">دخول</button>
   <button onclick="register()">إنشاء حساب</button>
 
-  <p id="msg"></p>
+  <p id="message"></p>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-    import {
-      getAuth,
-      signInWithEmailAndPassword,
-      createUserWithEmailAndPassword
-    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithEmailAndPassword, 
+      createUserWithEmailAndPassword 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
@@ -63,30 +64,31 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    window.login = async function () {
+    window.login = function () {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById("msg").innerText = "تم تسجيل الدخول ✅";
-        window.location.href = "dashboard.html";
-      } catch (error) {
-        document.getElementById("msg").innerText = error.message;
-      }
-    };
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => {
+          window.location.href = "home.html";
+        })
+        .catch(error => {
+          document.getElementById("message").innerText = error.message;
+        });
+    }
 
-    window.register = async function () {
+    window.register = function () {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-        document.getElementById("msg").innerText = "تم إنشاء الحساب ✅";
-      } catch (error) {
-        document.getElementById("msg").innerText = error.message;
-      }
-    };
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => {
+          document.getElementById("message").innerText = "تم إنشاء الحساب ✅";
+        })
+        .catch(error => {
+          document.getElementById("message").innerText = error.message;
+        });
+    }
   </script>
 
 </body>
