@@ -3,15 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <title>ACLDS</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+      padding-top: 100px;
+    }
+
+    button {
+      padding: 10px 20px;
+      border-radius: 20px;
+      border: none;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
-<body style="background:black; color:white; text-align:center; padding-top:100px;">
+<body>
 
   <h1>ACLDS</h1>
-  <p>التطبيق ديالك خدام 🔥</p>
+  <p>🔥 التطبيق ديالك خدام</p>
 
-  <script>
-    console.log("site works ✅");
+  <button onclick="goLogin()">تسجيل الدخول</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
+      authDomain: "aclds-app.firebaseapp.com",
+      projectId: "aclds-app",
+      storageBucket: "aclds-app.appspot.com",
+      messagingSenderId: "391599013116",
+      appId: "1:391599013116:web:fef6ffb35d884990b9ab79"
+    };
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      console.log("Firebase خدام ✅");
+    } catch (error) {
+      console.error("خطأ Firebase:", error);
+    }
+
+    window.goLogin = function () {
+      window.location.href = "login.html";
+    };
   </script>
 
 </body>
