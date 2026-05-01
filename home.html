@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Home</title>
+
+  <style>
+    body {
+      background: black;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+      margin-top: 100px;
+    }
+
+    button {
+      padding: 10px 20px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>👋 مرحبا بك</h1>
+  <p id="userEmail"></p>
+
+  <button onclick="logout()">تسجيل الخروج</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { 
+      getAuth, 
+      onAuthStateChanged, 
+      signOut 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
+      authDomain: "aclds-app.firebaseapp.com",
+      projectId: "aclds-app",
+      storageBucket: "aclds-app.appspot.com",
+      messagingSenderId: "391599013116",
+      appId: "1:391599013116:web:fef6ffb35d884990b9ab79"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // 🔒 حماية الصفحة + عرض الإيميل
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("userEmail").innerText = "📧 " + user.email;
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    // 🚪 تسجيل الخروج
+    window.logout = function () {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      });
+    };
+  </script>
+
+</body>
+</html>
