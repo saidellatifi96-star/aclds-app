@@ -1,20 +1,17 @@
-<script type="module">
-  // استيراد Firebase من CDN
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"></script>
 
-  // إعدادات المشروع ديالك
+<script>
   const firebaseConfig = {
-    apiKey: "حط apiKey ديالك",
+    apiKey: "YOUR_KEY",
     authDomain: "aclds-app.firebaseapp.com",
     projectId: "aclds-app",
     storageBucket: "aclds-app.appspot.com",
     messagingSenderId: "391599013116",
-    appId: "1:391599013116:web:xxxx",
+    appId: "1:391599013116:web:XXXX",
     measurementId: "G-XXXX"
   };
 
-  // تشغيل Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+  firebase.initializeApp(firebaseConfig);
+  firebase.analytics();
 </script>
