@@ -1,17 +1,16 @@
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 
-<script>
   const firebaseConfig = {
-    apiKey: "YOUR_KEY",
+    apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
     authDomain: "aclds-app.firebaseapp.com",
     projectId: "aclds-app",
     storageBucket: "aclds-app.appspot.com",
     messagingSenderId: "391599013116",
-    appId: "1:391599013116:web:XXXX",
-    measurementId: "G-XXXX"
+    appId: "1:391599013116:web:fef6ffb35d884990b9ab79"
   };
 
-  firebase.initializeApp(firebaseConfig);
-  firebase.analytics();
+  const app = initializeApp(firebaseConfig);
+
+  console.log("Firebase خدام ✅");
 </script>
