@@ -7,7 +7,7 @@
 
 <body style="background:black;color:white;text-align:center;font-family:sans-serif;">
 
-<h2>إضافة لاعب</h2>
+<h1>إضافة لاعب ⚽</h1>
 
 <input type="text" id="nom" placeholder="اسم اللاعب"><br><br>
 <input type="number" id="age" placeholder="العمر"><br><br>
@@ -31,11 +31,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// function إضافة لاعب
 window.ajouterJoueur = function () {
   const nom = document.getElementById("nom").value;
   const age = document.getElementById("age").value;
 
-  if(nom === "" || age === ""){
+  if (nom === "" || age === "") {
     alert("عمر الحقول ❗");
     return;
   }
@@ -43,12 +44,16 @@ window.ajouterJoueur = function () {
   push(ref(db, "joueurs"), {
     nom: nom,
     age: age
+  })
+  .then(() => {
+    alert("تمت الإضافة ✅");
+    document.getElementById("nom").value = "";
+    document.getElementById("age").value = "";
+  })
+  .catch((error) => {
+    alert("خطأ: " + error);
+    console.error(error);
   });
-
-  alert("تمت الإضافة ✅");
-
-  document.getElementById("nom").value = "";
-  document.getElementById("age").value = "";
 };
 </script>
 
