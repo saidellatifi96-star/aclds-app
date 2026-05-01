@@ -2,59 +2,280 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>ACLDs</title>
+<title>ACLDs FINAL</title>
+
+<style>
+body { background:black; color:white; text-align:center; font-family:Arial; }
+
+input, select {
+  padding:10px; margin:8px;
+  border-radius:10px; border:none; width:220px;
+}
+
+button {
+  padding:10px; border:none;
+  border-radius:10px; margin:5px; cursor:pointer;
+}
+
+.card {
+  background:#222;
+  margin:10px;
+  padding:10px;
+  border-radius:10px;
+}
+
+.ok{color:#00ff88}
+.no{color:red}
+</style>
 </head>
 
-<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
+<body>
 
-<h1>إضافة لاعب ⚽</h1>
+<h1>⚽ ACLDs FINAL</h1>
 
-<input type="text" id="nom" placeholder="اسم اللاعب"><br><br>
-<input type="number" id="age" placeholder="العمر"><br><br>
+<!-- LOGIN -->
+<div id="login">
+  <h2>تسجيل الدخول</h2>
+  <input id="email" placeholder="Email"><br>
+  <input id="password" type="password" placeholder="Password"><br>
+  <button onclick="login()">دخول</button>
+</div>
 
-<button onclick="ajouterJoueur()">إضافة</button>
+<!-- APP -->
+<div id="app" style="display:none">
+
+<h2>➕ إضافة / تعديل لاعب</h2>
+
+<input id="nom" placeholder="اسم اللاعب"><br>
+<input id="age" type="number" placeholder="العمر"><br>
+
+<select id="categorie">
+  <option>U10</option>
+  <option>U12</option>
+  <option>U15</option>
+  <option>U17</option>
+</select><br>
+
+<select id="mensuel">
+  <option value="yes">خالص شهري</option>
+  <option value="no">مازال</option>
+</select>
+
+<select id="annuel">
+  <option value="yes">خالص سنوي</option>
+  <option value="no">مازال</option>
+</select><br>
+
+<button onclick="save()">💾 حفظ</button>
+<button onclick="logout()">🚪 خروج</button>
+
+<hr>
+
+<h3>🔍 بحث</h3>
+<input id="search" placeholder="ابحث..." onkeyup="searchPlayer()">
+
+<h3>💰 المداخيل</h3>
+<div id="total"></div>
+
+<h3>📊 الإحصائيات</h3>
+<div id="stats"></div>
+
+<button onclick="exportCSV()">📁 تحميل Excel</button>
+
+<h3>📋 اللاعبين</h3>
+<div id="list"></div>
+
+</div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
+from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+
+import { getDatabase, ref, push, onValue, remove, update } 
+from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
+  apiKey: "PUT_YOUR_API_KEY_HERE",
   authDomain: "aclds-app.firebaseapp.com",
-  databaseURL: "https://aclds-app-default-rtdb.firebaseio.com/",
-  projectId: "aclds-app",
-  storageBucket: "aclds-app.appspot.com",
-  messagingSenderId: "391599013116",
-  appId: "1:391599013116:web:6cc068d28097a90bb9ab79"
+  databaseURL: "https://aclds-app-default-rtdb.firebaseio.com",
+  projectId: "aclds-app"
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const auth = getAuth();
+const db = getDatabase();
 
-// function إضافة لاعب
-window.ajouterJoueur = function () {
-  const nom = document.getElementById("nom").value;
-  const age = document.getElementById("age").value;
+let data = {};
+let editId = null;
 
-  if (nom === "" || age === "") {
-    alert("عمر الحقول ❗");
-    return;
+// LOGIN
+window.login = ()=>{
+  signInWithEmailAndPassword(auth, email.value, password.value)
+  .catch(e=>alert(e.message));
+}
+
+// LOGOUT
+window.logout = ()=> signOut(auth);
+
+// STATE
+onAuthStateChanged(auth,user=>{
+  document.getElementById("login").style.display = user ? "none":"block";
+  document.getElementById("app").style.display = user ? "block":"none";
+  if(user) load();
+});
+
+// LOAD
+function load(){
+  onValue(ref(db,"joueurs"), snap=>{
+    data = snap.val() || {};
+    render(data);
+    calcTotal();
+    calcStats();
+  });
+}
+
+// ADD / EDIT
+window.save = ()=>{
+  const player = {
+    nom: document.getElementById("nom").value,
+    age: document.getElementById("age").value,
+    categorie: document.getElementById("categorie").value,
+    mensuel: document.getElementById("mensuel").value,
+    annuel: document.getElementById("annuel").value
+  };
+
+  if(editId){
+    update(ref(db,"joueurs/"+editId), player);
+    editId = null;
+  } else {
+    push(ref(db,"joueurs"), player);
   }
 
-  push(ref(db, "joueurs"), {
-    nom: nom,
-    age: age
-  })
-  .then(() => {
-    alert("تمت الإضافة ✅");
-    document.getElementById("nom").value = "";
-    document.getElementById("age").value = "";
-  })
-  .catch((error) => {
-    alert("خطأ: " + error);
-    console.error(error);
-  });
-};
+  alert("تم الحفظ ✅");
+
+  document.getElementById("nom").value="";
+  document.getElementById("age").value="";
+}
+
+// SHOW
+function render(obj){
+  const list = document.getElementById("list");
+  list.innerHTML="";
+
+  for(let id in obj){
+    let j=obj[id];
+
+    list.innerHTML += `
+    <div class="card">
+      <b>${j.nom}</b><br>
+      🎂 ${j.age}<br>
+      🏷️ ${j.categorie}<br>
+
+      💰 شهري:
+      <span class="${j.mensuel=='yes'?'ok':'no'}">
+      ${j.mensuel=='yes'?'✔️':'❌'}
+      </span><br>
+
+      📅 سنوي:
+      <span class="${j.annuel=='yes'?'ok':'no'}">
+      ${j.annuel=='yes'?'✔️':'❌'}
+      </span><br>
+
+      <button onclick="edit('${id}')">✏️</button>
+      <button onclick="delPlayer('${id}')">❌</button>
+    </div>
+    `;
+  }
+}
+
+// DELETE
+window.delPlayer = id=>{
+  remove(ref(db,"joueurs/"+id));
+}
+
+// EDIT
+window.edit = id=>{
+  let j = data[id];
+
+  document.getElementById("nom").value = j.nom;
+  document.getElementById("age").value = j.age;
+  document.getElementById("categorie").value = j.categorie;
+  document.getElementById("mensuel").value = j.mensuel;
+  document.getElementById("annuel").value = j.annuel;
+
+  editId = id;
+}
+
+// SEARCH
+window.searchPlayer = ()=>{
+  let v = document.getElementById("search").value.toLowerCase();
+  let filtered={};
+
+  for(let id in data){
+    if(data[id].nom.toLowerCase().includes(v)){
+      filtered[id]=data[id];
+    }
+  }
+
+  render(filtered);
+}
+
+// TOTAL
+function calcTotal(){
+  let total = 0;
+
+  for(let id in data){
+    if(data[id].mensuel=="yes") total += 100;
+    if(data[id].annuel=="yes") total += 500;
+  }
+
+  document.getElementById("total").innerHTML =
+    "💰 المجموع: " + total + " درهم";
+}
+
+// STATS
+function calcStats(){
+  let totalPlayers = 0;
+  let paidM = 0, unpaidM = 0;
+  let paidY = 0, unpaidY = 0;
+
+  for(let id in data){
+    totalPlayers++;
+
+    if(data[id].mensuel=="yes") paidM++;
+    else unpaidM++;
+
+    if(data[id].annuel=="yes") paidY++;
+    else unpaidY++;
+  }
+
+  document.getElementById("stats").innerHTML = `
+  👥 ${totalPlayers} لاعب<br>
+  💰 شهري: ${paidM} ✔️ | ${unpaidM} ❌<br>
+  📅 سنوي: ${paidY} ✔️ | ${unpaidY} ❌
+  `;
+}
+
+// EXPORT
+window.exportCSV = function(){
+  let csv = "الاسم,العمر,الفئة,شهري,سنوي\n";
+
+  for(let id in data){
+    let j = data[id];
+    csv += `${j.nom},${j.age},${j.categorie},${j.mensuel},${j.annuel}\n`;
+  }
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "players.csv";
+  a.click();
+}
+
 </script>
 
 </body>
