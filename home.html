@@ -1,55 +1,161 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title>ACLDs - Home</title>
+<meta charset="UTF-8">
+<title>ACLDs App</title>
+
+<style>
+body{background:#111;color:white;font-family:Arial;text-align:center}
+
+input,select{
+padding:10px;margin:5px;border-radius:10px;border:none;width:200px
+}
+
+button{
+padding:10px;border:none;border-radius:10px;margin:5px;cursor:pointer
+}
+
+.card{
+background:#222;padding:10px;margin:10px;border-radius:10px
+}
+
+.ok{color:#00ff88}
+.no{color:red}
+img{width:80px;height:80px;border-radius:50%}
+</style>
 </head>
 
-<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
+<body>
 
-<h2>إضافة لاعب</h2>
+<h1>⚽ ACLDs</h1>
 
-<input type="text" id="nom" placeholder="اسم اللاعب"><br><br>
-<input type="number" id="age" placeholder="العمر"><br><br>
+<button onclick="logout()">🚪 خروج</button>
 
-<button onclick="ajouterJoueur()">إضافة</button>
+<h2>➕ إضافة لاعب</h2>
+
+<input id="nom" placeholder="الاسم"><br>
+<input id="age" type="number" placeholder="العمر"><br>
+
+<select id="categorie">
+<option>U10</option>
+<option>U12</option>
+<option>U15</option>
+<option>U17</option>
+</select><br>
+
+<select id="mensuel">
+<option value="yes">خالص شهري</option>
+<option value="no">مازال</option>
+</select>
+
+<select id="annuel">
+<option value="yes">خالص سنوي</option>
+<option value="no">مازال</option>
+</select><br>
+
+<input type="file" id="photo"><br>
+
+<button onclick="save()">💾 حفظ</button>
+
+<hr>
+
+<input id="search" placeholder="بحث..." onkeyup="searchPlayer()">
+
+<div id="list"></div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+import { getAuth, signOut } 
+from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+
+import { getDatabase, ref, push, onValue } 
+from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
   authDomain: "aclds-app.firebaseapp.com",
-  databaseURL: "https://aclds-app-default-rtdb.firebaseio.com/",
   projectId: "aclds-app",
-  storageBucket: "aclds-app.appspot.com",
-  messagingSenderId: "391599013116",
-  appId: "1:391599013116:web:6cc068d28097a90bb9ab79"
+  databaseURL: "https://aclds-app-default-rtdb.firebaseio.com"
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getDatabase(app);
 
-window.ajouterJoueur = function () {
-  const nom = document.getElementById("nom").value;
-  const age = document.getElementById("age").value;
+let data={};
 
-  if(nom === "" || age === ""){
-    alert("عمر الحقول ❗");
-    return;
+// logout
+window.logout=()=> signOut(auth).then(()=>location.href="index.html");
+
+// save
+window.save=()=>{
+  const file = document.getElementById("photo").files[0];
+
+  const reader = new FileReader();
+  reader.onload = function(){
+    const player={
+      nom:nom.value,
+      age:age.value,
+      categorie:categorie.value,
+      mensuel:mensuel.value,
+      annuel:annuel.value,
+      photo: reader.result || ""
+    };
+
+    push(ref(db,"joueurs"), player);
+    alert("تم الحفظ ✅");
+  };
+
+  if(file) reader.readAsDataURL(file);
+  else reader.onload();
+};
+
+// load
+onValue(ref(db,"joueurs"),snap=>{
+  data=snap.val()||{};
+  render(data);
+});
+
+// render
+function render(obj){
+  list.innerHTML="";
+  for(let id in obj){
+    let j=obj[id];
+
+    list.innerHTML+=`
+    <div class="card">
+      <img src="${j.photo}"><br>
+      <b>${j.nom}</b><br>
+      🎂 ${j.age}<br>
+      🏷️ ${j.categorie}<br>
+
+      💰 <span class="${j.mensuel=='yes'?'ok':'no'}">
+      ${j.mensuel=='yes'?'✔️':'❌'}
+      </span>
+
+      📅 <span class="${j.annuel=='yes'?'ok':'no'}">
+      ${j.annuel=='yes'?'✔️':'❌'}
+      </span>
+    </div>
+    `;
+  }
+}
+
+// search
+window.searchPlayer=()=>{
+  let v=search.value.toLowerCase();
+  let f={};
+
+  for(let id in data){
+    if(data[id].nom.toLowerCase().includes(v)){
+      f[id]=data[id];
+    }
   }
 
-  push(ref(db, "joueurs"), {
-    nom: nom,
-    age: age
-  });
-
-  alert("تمت الإضافة ✅");
-
-  document.getElementById("nom").value = "";
-  document.getElementById("age").value = "";
+  render(f);
 };
+
 </script>
 
 </body>
