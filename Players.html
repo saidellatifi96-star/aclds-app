@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+
+<style>
+body{background:#0f0f0f;color:white;text-align:center;font-family:Arial;}
+
+input,select,button{
+padding:10px;
+margin:5px;
+border-radius:10px;
+border:none;
+}
+
+.card{
+background:#1a1a1a;
+margin:10px;
+padding:10px;
+border-radius:10px;
+}
+
+button{background:#00c853;color:white;}
+</style>
+</head>
+
+<body>
+
+<h2>📋 اللاعبين</h2>
+
+<input type="text" id="search" placeholder="بحث...">
+
+<select id="filter">
+<option value="">كل الفئات</option>
+<option>U6</option>
+<option>U8</option>
+<option>U10</option>
+<option>U12</option>
+<option>U14</option>
+<option>U16</option>
+<option>U18</option>
+</select>
+
+<div id="list"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSy...",
+authDomain: "aclds-app.firebaseapp.com",
+databaseURL: "https://aclds-app-default-rtdb.firebaseio.com",
+projectId: "aclds-app",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let players = {};
+
+onValue(ref(db,"players"),snap=>{
+    players = snap.val() || {};
+    render();
+});
+
+document.getElementById("search").oninput = render;
+document.getElementById("filter").onchange = render;
+
+function render(){
+
+    let search = document.getElementById("search").value.toLowerCase();
+    let filter = document.getElementById("filter").value;
+
+    let html="";
+
+    Object.keys(players).forEach(id=>{
+
+        let p = players[id];
+
+        if(p.name.toLowerCase().indexOf(search)===-1) return;
+        if(filter && p.category !== filter) return;
+
+        html+=`
+        <div class="card">
+        
+        <input id="name_${id}" value="${p.name}">
+        
+        <select id="cat_${id}">
+            <option ${p.category=="U6"?"selected":""}>U6</option>
+            <option ${p.category=="U8"?"selected":""}>U8</option>
+            <option ${p.category=="U10"?"selected":""}>U10</option>
+            <option ${p.category=="U12"?"selected":""}>U12</option>
+            <option ${p.category=="U14"?"selected":""}>U14</option>
+            <option ${p.category=="U16"?"selected":""}>U16</option>
+            <option ${p.category=="U18"?"selected":""}>U18</option>
+        </select>
+
+        <br>
+
+        <button onclick="savePlayer('${id}')">💾 حفظ</button>
+
+        </div>
+        `;
+    });
+
+    document.getElementById("list").innerHTML = html;
+}
+
+window.savePlayer = (id)=>{
+
+    let name = document.getElementById("name_"+id).value;
+    let category = document.getElementById("cat_"+id).value;
+
+    if(!name) return alert("الاسم فارغ");
+
+    update(ref(db,"players/"+id),{
+        name:name,
+        category:category
+    });
+
+    alert("تم التعديل");
+}
+
+</script>
+
+</body>
+</html>
