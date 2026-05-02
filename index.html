@@ -2,22 +2,15 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>ACLDs PRO</title>
+<title>ACLDs PRO MAX</title>
 
 <style>
 body{
   margin:0;
   font-family:Arial;
-  background:url('https://i.imgur.com/8Km9tLL.png') no-repeat center;
-  background-size:cover;
+  background:black;
   color:white;
   text-align:center;
-}
-
-.overlay{
-  background:rgba(0,0,0,0.85);
-  min-height:100vh;
-  padding:20px;
 }
 
 input,select{
@@ -29,36 +22,19 @@ input,select{
 }
 
 button{
-  padding:12px 20px;
+  padding:10px;
   border:none;
-  border-radius:12px;
+  border-radius:10px;
   margin:5px;
   cursor:pointer;
-  font-weight:bold;
 }
 
-.main-btn{
-  width:80%;
-  background:#00c853;
-  color:white;
-  font-size:18px;
-}
-
-.card{
-  background:#1e1e1e;
-  margin:15px;
-  padding:15px;
-  border-radius:15px;
-}
-
-img{
-  width:80px;
-  height:80px;
-  border-radius:50%;
-}
+.main{background:#00c853;color:white;width:80%}
+.card{background:#222;margin:10px;padding:15px;border-radius:12px}
 
 .ok{color:#00ff88}
 .no{color:red}
+.exempt{color:orange}
 
 .logout{
   position:fixed;
@@ -67,12 +43,10 @@ img{
   background:red;
   color:white;
 }
-
 </style>
 </head>
 
 <body>
-<div class="overlay">
 
 <!-- LOGIN -->
 <div id="login">
@@ -86,19 +60,19 @@ img{
 <div id="home" style="display:none">
 <h1>⚽ ACLDs</h1>
 
-<button class="main-btn" onclick="showPage('add')">➕ إضافة لاعب</button><br>
-<button class="main-btn" onclick="showPage('players')">📋 لائحة اللاعبين</button><br>
-<button class="main-btn" onclick="showPage('monthly')">💰 الواجب الشهري</button><br>
-<button class="main-btn" onclick="showPage('yearly')">📅 الواجب السنوي</button>
+<button class="main" onclick="go('add')">➕ إضافة لاعب</button><br>
+<button class="main" onclick="go('players')">📋 اللاعبين</button><br>
+<button class="main" onclick="go('monthly')">💰 شهري</button><br>
+<button class="main" onclick="go('yearly')">📅 سنوي</button><br>
+<button class="main" onclick="go('settings')">⚙️ الإعدادات</button>
 
 <button class="logout" onclick="logout()">🚪 خروج</button>
 </div>
 
-<!-- ADD PLAYER -->
+<!-- ADD -->
 <div id="add" style="display:none">
-<h2>➕ إضافة لاعب</h2>
-
-<input id="name" placeholder="اسم اللاعب"><br>
+<h2>➕ لاعب</h2>
+<input id="name" placeholder="الاسم"><br>
 <input id="birth" type="date"><br>
 
 <select id="category">
@@ -110,10 +84,13 @@ img{
 <option>U20</option>
 </select><br>
 
-<input type="file" id="image"><br>
+<select id="exempt">
+<option value="no">عادي</option>
+<option value="yes">معفى</option>
+</select><br>
 
-<button onclick="savePlayer()">💾 حفظ</button>
-<button onclick="back()">⬅ رجوع</button>
+<button onclick="save()">💾 حفظ</button>
+<button onclick="back()">⬅</button>
 </div>
 
 <!-- PLAYERS -->
@@ -121,23 +98,36 @@ img{
 <h2>📋 اللاعبين</h2>
 <input id="search" placeholder="بحث..." onkeyup="searchPlayer()">
 <div id="list"></div>
-<button onclick="back()">⬅ رجوع</button>
+<button onclick="back()">⬅</button>
 </div>
 
 <!-- MONTHLY -->
 <div id="monthly" style="display:none">
-<h2>💰 الواجب الشهري (100 درهم)</h2>
+<h2>💰 الواجب الشهري</h2>
+
+<select id="season" onchange="render()">
+<option>2025/2026</option>
+<option>2026/2027</option>
+</select>
+
 <div id="monthlyList"></div>
-<button onclick="back()">⬅ رجوع</button>
+<button onclick="back()">⬅</button>
 </div>
 
 <!-- YEARLY -->
 <div id="yearly" style="display:none">
-<h2>📅 الواجب السنوي (500 درهم)</h2>
+<h2>📅 الواجب السنوي</h2>
 <div id="yearlyList"></div>
-<button onclick="back()">⬅ رجوع</button>
+<button onclick="back()">⬅</button>
 </div>
 
+<!-- SETTINGS -->
+<div id="settings" style="display:none">
+<h2>⚙️ الإعدادات</h2>
+<input id="monthlyPrice" placeholder="ثمن الشهري"><br>
+<input id="yearlyPrice" placeholder="ثمن السنوي"><br>
+<button onclick="saveSettings()">💾 حفظ</button>
+<button onclick="back()">⬅</button>
 </div>
 
 <script type="module">
@@ -146,7 +136,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/fireba
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
 from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
-import { getDatabase, ref, push, onValue, update } 
+import { getDatabase, ref, push, onValue, update, set } 
 from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -160,142 +150,150 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getDatabase();
 
-let data = {};
+let data={}, settings={monthly:100, yearly:500};
 
-// LOGIN
 window.login = ()=>{
   signInWithEmailAndPassword(auth,email.value,password.value)
+  .then(()=>alert("تم تسجيل الدخول ✅"))
   .catch(e=>alert(e.message));
 }
 
-// LOGOUT
 window.logout = ()=> signOut(auth);
 
-// AUTH STATE
 onAuthStateChanged(auth,user=>{
-  login.style.display = user ? "none":"block";
-  home.style.display = user ? "block":"none";
-  if(user) load();
+  login.style.display = user?"none":"block";
+  home.style.display = user?"block":"none";
+  if(user){load();loadSettings();}
 });
 
-// NAVIGATION
-window.showPage = (page)=>{
-  home.style.display="none";
-  add.style.display="none";
-  players.style.display="none";
-  monthly.style.display="none";
-  yearly.style.display="none";
+window.go = p=>{
+  ["home","add","players","monthly","yearly","settings"]
+  .forEach(x=>document.getElementById(x).style.display="none");
 
-  document.getElementById(page).style.display="block";
+  document.getElementById(p).style.display="block";
 }
 
-window.back = ()=>{
-  add.style.display="none";
-  players.style.display="none";
-  monthly.style.display="none";
-  yearly.style.display="none";
-  home.style.display="block";
-}
+window.back = ()=>go("home");
 
-// LOAD DATA
 function load(){
   onValue(ref(db,"players"),snap=>{
-    data = snap.val() || {};
+    data = snap.val()||{};
     render();
   });
 }
 
-// SAVE PLAYER
-window.savePlayer = ()=>{
-  let name = document.getElementById("name").value;
+function loadSettings(){
+  onValue(ref(db,"settings"),snap=>{
+    settings = snap.val() || {monthly:100,yearly:500};
+    monthlyPrice.value=settings.monthly;
+    yearlyPrice.value=settings.yearly;
+  });
+}
 
-  // منع التكرار
+window.saveSettings = ()=>{
+  set(ref(db,"settings"),{
+    monthly:Number(monthlyPrice.value),
+    yearly:Number(yearlyPrice.value)
+  });
+  alert("تم حفظ الإعدادات");
+}
+
+window.save = ()=>{
+  let n=name.value;
+
   for(let id in data){
-    if(data[id].name == name){
-      alert("⚠️ اللاعب موجود مسبقا");
+    if(data[id].name==n){
+      alert("⚠️ الاسم موجود");
       return;
     }
   }
 
-  let player = {
-    name: name,
-    birth: birth.value,
-    category: category.value,
-    monthly:"no",
-    yearly:"no"
-  };
+  push(ref(db,"players"),{
+    name:n,
+    birth:birth.value,
+    category:category.value,
+    exempt:exempt.value,
+    yearly:"no",
+    months:{}
+  });
 
-  push(ref(db,"players"),player);
-  alert("تم الحفظ ✅");
+  alert("تمت الإضافة");
 }
 
-// RENDER
 function render(){
-  let listHTML="";
-  let monthlyHTML="";
-  let yearlyHTML="";
+
+  const months = ["09","10","11","12","01","02","03","04","05","06","07"];
+
+  let listHTML="", mHTML="", yHTML="";
 
   for(let id in data){
-    let p = data[id];
+    let p=data[id];
 
-    listHTML += `
+    listHTML+=`
     <div class="card">
-      <b>${p.name}</b><br>
-      🎂 ${p.birth}<br>
-      🏷️ ${p.category}
-    </div>
-    `;
+    <b>${p.name}</b><br>
+    🎂 ${p.birth}<br>
+    🏷️ ${p.category}<br>
+    ${p.exempt=="yes"?"<span class='exempt'>🚫 معفى</span>":""}
+    </div>`;
 
-    monthlyHTML += `
-    <div class="card">
-      ${p.name}<br>
-      <span class="${p.monthly=='yes'?'ok':'no'}">
-      ${p.monthly=='yes'?'✔️ خالص':'❌ مازال'}
-      </span><br>
-      <button onclick="payMonthly('${id}')">تغيير</button>
-    </div>
-    `;
+    let monthsHTML="";
 
-    yearlyHTML += `
+    if(p.exempt=="yes"){
+      monthsHTML="🚫 معفى";
+    }else{
+      months.forEach(m=>{
+        let paid = p.months?.[m]=="yes";
+        monthsHTML+=`
+        <button style="background:${paid?"green":"red"};color:white;width:45px"
+        onclick="toggleMonth('${id}','${m}')">
+        ${m}
+        </button>`;
+      });
+    }
+
+    mHTML+=`
     <div class="card">
-      ${p.name}<br>
-      <span class="${p.yearly=='yes'?'ok':'no'}">
-      ${p.yearly=='yes'?'✔️ خالص':'❌ مازال'}
-      </span><br>
-      <button onclick="payYearly('${id}')">تغيير</button>
-    </div>
-    `;
+    <b>${p.name}</b><br>
+    ${monthsHTML}
+    </div>`;
+
+    yHTML+=`
+    <div class="card">
+    ${p.name}<br>
+    ${p.exempt=="yes"?"🚫 معفى":
+    `<span class="${p.yearly=='yes'?'ok':'no'}">
+    ${p.yearly=='yes'?'✔️':'❌'}
+    </span>
+    <br>${settings.yearly} درهم
+    <br><button onclick="payY('${id}')">تغيير</button>`}
+    </div>`;
   }
 
-  list.innerHTML = listHTML;
-  monthlyList.innerHTML = monthlyHTML;
-  yearlyList.innerHTML = yearlyHTML;
+  list.innerHTML=listHTML;
+  monthlyList.innerHTML=mHTML;
+  yearlyList.innerHTML=yHTML;
 }
 
-// PAY
-window.payMonthly = id=>{
-  let val = data[id].monthly=="yes"?"no":"yes";
-  update(ref(db,"players/"+id),{monthly:val});
+window.toggleMonth=(id,m)=>{
+  let val = data[id].months?.[m]=="yes"?"no":"yes";
+  update(ref(db,"players/"+id+"/months/"+m), val);
 }
 
-window.payYearly = id=>{
-  let val = data[id].yearly=="yes"?"no":"yes";
-  update(ref(db,"players/"+id),{yearly:val});
+window.payY=id=>{
+  let v=data[id].yearly=="yes"?"no":"yes";
+  update(ref(db,"players/"+id),{yearly:v});
 }
 
-// SEARCH
-window.searchPlayer = ()=>{
-  let v = search.value.toLowerCase();
+window.searchPlayer=()=>{
+  let v=search.value.toLowerCase();
   let html="";
-
   for(let id in data){
     if(data[id].name.toLowerCase().includes(v)){
-      let p=data[id];
-      html+=`<div class="card">${p.name}</div>`;
+      html+=`<div class="card">${data[id].name}</div>`;
     }
   }
-
-  list.innerHTML = html;
+  list.innerHTML=html;
 }
 
 </script>
