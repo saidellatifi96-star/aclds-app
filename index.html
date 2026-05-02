@@ -2,53 +2,46 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>ACLDs PRO</title>
+<title>ACLDs FINAL</title>
 
 <style>
-body {
-  background:#0d0d0d;
+body{
+  background:#0f172a;
   color:white;
   font-family:Arial;
   text-align:center;
 }
 
-.container {
+.container{
   max-width:400px;
   margin:auto;
 }
 
-input, select {
+input,select{
   width:90%;
-  padding:12px;
+  padding:10px;
   margin:6px;
-  border-radius:12px;
+  border-radius:10px;
   border:none;
 }
 
-button {
-  padding:10px 15px;
+button{
+  padding:10px;
   border:none;
   border-radius:10px;
-  cursor:pointer;
   margin:5px;
+  cursor:pointer;
 }
 
-.card {
-  background:#1a1a1a;
+.card{
+  background:#1e293b;
   padding:10px;
   margin:10px;
-  border-radius:12px;
+  border-radius:10px;
 }
 
-img {
-  width:80px;
-  height:80px;
-  border-radius:50%;
-  object-fit:cover;
-}
-
-.ok {color:#00ff88}
-.no {color:red}
+.ok{color:#22c55e}
+.no{color:red}
 </style>
 </head>
 
@@ -56,57 +49,52 @@ img {
 
 <div class="container">
 
-<h1>⚽ ACLDs PRO</h1>
+<h2>⚽ ACLDs</h2>
 
 <!-- LOGIN -->
-<div id="login">
-  <h2>تسجيل الدخول</h2>
+<div id="loginBox">
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
-  <button onclick="login()">دخول</button>
+  <button id="loginBtn">دخول</button>
 </div>
 
 <!-- APP -->
-<div id="app" style="display:none">
+<div id="appBox" style="display:none">
 
-<h2>➕ إضافة لاعب</h2>
+<button id="logoutBtn">خروج</button>
+
+<h3>➕ إضافة لاعب</h3>
 
 <input id="nom" placeholder="اسم اللاعب">
 <input id="age" type="number" placeholder="العمر">
 
 <select id="categorie">
-  <option>U10</option>
-  <option>U12</option>
-  <option>U15</option>
-  <option>U17</option>
-</select>
-
-<input id="image" placeholder="رابط صورة اللاعب">
-
-<select id="mensuel">
-  <option value="yes">خالص شهري</option>
-  <option value="no">مازال</option>
-</select>
-
-<select id="annuel">
-  <option value="yes">خالص سنوي</option>
-  <option value="no">مازال</option>
+<option>U10</option>
+<option>U12</option>
+<option>U15</option>
+<option>U17</option>
 </select>
 
 <input type="date" id="date">
 
-<button onclick="save()">💾 حفظ</button>
-<button onclick="logout()">🚪 خروج</button>
+<input id="image" placeholder="رابط صورة">
+
+<select id="mensuel">
+<option value="yes">خالص شهري</option>
+<option value="no">مازال</option>
+</select>
+
+<select id="annuel">
+<option value="yes">خالص سنوي</option>
+<option value="no">مازال</option>
+</select>
+
+<button id="saveBtn">حفظ</button>
 
 <hr>
 
-<h3>🔍 بحث</h3>
-<input id="search" onkeyup="searchPlayer()" placeholder="ابحث بالاسم">
+<input id="search" placeholder="بحث...">
 
-<h3>📅 الأجندة</h3>
-<div id="agenda"></div>
-
-<h3>📋 اللاعبين</h3>
 <div id="list"></div>
 
 </div>
@@ -123,7 +111,7 @@ import { getDatabase, ref, push, onValue }
 from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
 const firebaseConfig = {
-  apiapiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc"
+  apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
   authDomain: "aclds-app.firebaseapp.com",
   databaseURL: "https://aclds-app-default-rtdb.firebaseio.com",
   projectId: "aclds-app"
@@ -135,20 +123,37 @@ const db = getDatabase();
 
 let data = {};
 
+// عناصر
+const loginBox = document.getElementById("loginBox");
+const appBox = document.getElementById("appBox");
+
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const saveBtn = document.getElementById("saveBtn");
+
 // LOGIN
-window.login = ()=>{
+loginBtn.onclick = ()=>{
   signInWithEmailAndPassword(auth, email.value, password.value)
-  .catch(e=>alert("خطأ: "+e.message));
+  .then(()=> alert("تم الدخول ✅"))
+  .catch(e=> alert(e.message));
 }
 
 // LOGOUT
-window.logout = ()=> signOut(auth);
+logoutBtn.onclick = ()=> signOut(auth);
 
 // STATE
 onAuthStateChanged(auth,user=>{
-  login.style.display = user ? "none":"block";
-  app.style.display = user ? "block":"none";
-  if(user) load();
+  if(user){
+    loginBox.style.display="none";
+    appBox.style.display="block";
+    load();
+  } else {
+    loginBox.style.display="block";
+    appBox.style.display="none";
+  }
 });
 
 // LOAD
@@ -156,30 +161,30 @@ function load(){
   onValue(ref(db,"joueurs"), snap=>{
     data = snap.val() || {};
     render(data);
-    agenda();
   });
 }
 
 // SAVE
-window.save = ()=>{
-  push(ref(db,"joueurs"), {
+saveBtn.onclick = ()=>{
+  const player = {
     nom: nom.value,
     age: age.value,
     categorie: categorie.value,
+    date: date.value,
     image: image.value,
     mensuel: mensuel.value,
-    annuel: annuel.value,
-    date: date.value
-  });
+    annuel: annuel.value
+  };
 
-  alert("تم الحفظ ✅");
+  push(ref(db,"joueurs"), player);
+
+  alert("تمت الإضافة");
 
   nom.value="";
   age.value="";
-  image.value="";
 }
 
-// SHOW
+// RENDER
 function render(obj){
   list.innerHTML="";
 
@@ -188,29 +193,28 @@ function render(obj){
 
     list.innerHTML += `
     <div class="card">
-      <img src="${j.image || 'https://via.placeholder.com/80'}"><br>
+      <img src="${j.image || 'https://via.placeholder.com/60'}" width="60"><br>
       <b>${j.nom}</b><br>
-      🎂 ${j.age}<br>
-      🏷️ ${j.categorie}<br>
+      ${j.age} سنة<br>
+      ${j.categorie}<br>
+      ${j.date || ''}<br>
 
-      💰 شهري:
+      شهري:
       <span class="${j.mensuel=='yes'?'ok':'no'}">
-      ${j.mensuel=='yes'?'✔️':'❌'}
+      ${j.mensuel=='yes'?'✔':'❌'}
       </span><br>
 
-      📅 سنوي:
+      سنوي:
       <span class="${j.annuel=='yes'?'ok':'no'}">
-      ${j.annuel=='yes'?'✔️':'❌'}
-      </span><br>
-
-      📆 ${j.date || ''}
+      ${j.annuel=='yes'?'✔':'❌'}
+      </span>
     </div>
     `;
   }
 }
 
 // SEARCH
-window.searchPlayer = ()=>{
+document.getElementById("search").onkeyup = ()=>{
   let v = search.value.toLowerCase();
   let f={};
 
@@ -221,23 +225,6 @@ window.searchPlayer = ()=>{
   }
 
   render(f);
-}
-
-// AGENDA
-function agenda(){
-  agenda.innerHTML="";
-
-  for(let id in data){
-    let j=data[id];
-
-    if(j.date){
-      agenda.innerHTML += `
-      <div class="card">
-      📅 ${j.date} - ${j.nom}
-      </div>
-      `;
-    }
-  }
 }
 
 </script>
