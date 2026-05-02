@@ -2,57 +2,20 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>ACLDs TABLE PRO</title>
+<title>ACLDs</title>
 
 <style>
-body{
-  background:#0b0b0b;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-}
-
-h1{margin:20px}
-
-button{
-  padding:8px 12px;
-  margin:3px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-.month{
-  background:#222;
-  color:white;
-}
-
-.activeMonth{
-  background:#00c853;
-}
-
-table{
-  width:95%;
-  margin:auto;
-  border-collapse:collapse;
-  margin-top:20px;
-}
-
-th,td{
-  padding:10px;
-  border-bottom:1px solid #333;
-}
-
-th{background:#111}
-
-.green{color:#00ff88}
-.red{color:#ff5252}
-
-.stats{
-  margin:15px;
-  background:#111;
-  padding:10px;
-  border-radius:10px;
+body{background:#0f0f0f;color:white;text-align:center;font-family:Arial;}
+.btn{
+display:block;
+width:80%;
+margin:15px auto;
+padding:15px;
+background:#00c853;
+border-radius:12px;
+font-size:18px;
+text-decoration:none;
+color:white;
 }
 </style>
 </head>
@@ -61,146 +24,9 @@ th{background:#111}
 
 <h1>⚽ ACLDs</h1>
 
-<select id="season" onchange="changeSeason()">
-<option>2025/2026</option>
-<option>2026/2027</option>
-<option>2027/2028</option>
-</select>
-
-<div id="months"></div>
-
-<div class="stats" id="stats"></div>
-
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>الاسم</th>
-<th>شهري</th>
-<th>سنوي</th>
-</tr>
-</thead>
-<tbody id="table"></tbody>
-</table>
-
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getDatabase, ref, onValue, update } 
-from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
-  authDomain: "aclds-app.firebaseapp.com",
-  databaseURL: "https://aclds-app-default-rtdb.firebaseio.com",
-  projectId: "aclds-app"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-let data = {};
-let season = "2025/2026";
-let currentMonth = "09";
-
-const monthsArr=["09","10","11","12","01","02","03","04","05","06","07"];
-
-// رسم الأشهر
-function renderMonths(){
-  let html="";
-  monthsArr.forEach(m=>{
-    html+=`<button class="month ${m==currentMonth?"activeMonth":""}"
-    onclick="selectMonth('${m}')">${m}</button>`;
-  });
-  document.getElementById("months").innerHTML=html;
-}
-
-window.selectMonth = (m)=>{
-  currentMonth = m;
-  renderMonths();
-  render();
-};
-
-// تغيير الموسم
-window.changeSeason = ()=>{
-  season = document.getElementById("season").value;
-  render();
-};
-
-// تحميل البيانات
-onValue(ref(db,"players"),snap=>{
-  data = snap.val() || {};
-  renderMonths();
-  render();
-});
-
-// رسم الجدول
-function render(){
-
-let html="";
-let i=1;
-let total=0;
-let paid=0;
-
-for(let id in data){
-  let p=data[id];
-
-  if(!p.seasons) p.seasons={};
-  if(!p.seasons[season]) p.seasons[season]={months:{},yearly:"no"};
-
-  let s = p.seasons[season];
-
-  let mPaid = s.months?.[currentMonth]=="yes";
-  let yPaid = s.yearly=="yes";
-
-  if(mPaid) total+=100;
-  if(yPaid) total+=500;
-
-  if(mPaid || yPaid) paid++;
-
-  html+=`
-  <tr>
-    <td>${i++}</td>
-    <td>${p.name}</td>
-
-    <td onclick="toggleM('${id}')">
-      <span class="${mPaid?"green":"red"}">
-        ${mPaid?"✅":"❌"}
-      </span>
-    </td>
-
-    <td onclick="toggleY('${id}')">
-      <span class="${yPaid?"green":"red"}">
-        ${yPaid?"✅":"❌"}
-      </span>
-    </td>
-  </tr>
-  `;
-}
-
-document.getElementById("table").innerHTML=html;
-
-document.getElementById("stats").innerHTML=`
-💰 المجموع: ${total} درهم <br>
-👥 المؤدين: ${paid}
-`;
-}
-
-// تبديل شهري
-window.toggleM = (id)=>{
-  let current = data[id].seasons?.[season]?.months?.[currentMonth];
-  update(ref(db,`players/${id}/seasons/${season}/months/${currentMonth}`),
-  current=="yes"?"no":"yes");
-};
-
-// تبديل سنوي
-window.toggleY = (id)=>{
-  let current = data[id].seasons?.[season]?.yearly;
-  update(ref(db,`players/${id}/seasons/${season}`),
-  {yearly: current=="yes"?"no":"yes"});
-};
-
-</script>
+<a class="btn" href="add.html">➕ إضافة لاعب</a>
+<a class="btn" href="players.html">📋 اللاعبين</a>
+<a class="btn" href="payments.html">💰 الواجبات</a>
 
 </body>
 </html>
