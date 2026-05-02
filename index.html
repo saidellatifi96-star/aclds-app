@@ -2,55 +2,56 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>ACLDs PRO MAX</title>
+<title>ACLDs TABLE PRO</title>
 
 <style>
 body{
-  margin:0;
-  font-family:Arial;
-  background:#0a0a0a;
+  background:#0b0b0b;
   color:white;
+  font-family:Arial;
   text-align:center;
 }
 
 h1{margin:20px}
 
 button{
-  padding:12px;
+  padding:8px 12px;
+  margin:3px;
   border:none;
-  border-radius:12px;
-  margin:5px;
+  border-radius:8px;
   cursor:pointer;
 }
 
-.main{
-  width:90%;
-  background:#00c853;
-  color:white;
-  font-size:16px;
-}
-
-.card{
-  background:#1e1e1e;
-  margin:10px;
-  padding:15px;
-  border-radius:12px;
-}
-
 .month{
-  padding:8px;
-  margin:3px;
-  border-radius:8px;
-  font-size:12px;
+  background:#222;
+  color:white;
 }
 
-.green{background:#00c853}
-.red{background:#c62828}
+.activeMonth{
+  background:#00c853;
+}
+
+table{
+  width:95%;
+  margin:auto;
+  border-collapse:collapse;
+  margin-top:20px;
+}
+
+th,td{
+  padding:10px;
+  border-bottom:1px solid #333;
+}
+
+th{background:#111}
+
+.green{color:#00ff88}
+.red{color:#ff5252}
 
 .stats{
+  margin:15px;
   background:#111;
   padding:10px;
-  margin:10px;
   border-radius:10px;
 }
 </style>
@@ -60,51 +61,32 @@ button{
 
 <h1>⚽ ACLDs</h1>
 
-<select id="seasonSelect" onchange="changeSeason()">
+<select id="season" onchange="changeSeason()">
 <option>2025/2026</option>
 <option>2026/2027</option>
 <option>2027/2028</option>
 </select>
 
-<br><br>
+<div id="months"></div>
 
-<button class="main" onclick="show('add')">➕ إضافة لاعب</button>
-<button class="main" onclick="show('monthly')">💰 الشهري</button>
-<button class="main" onclick="show('yearly')">📅 السنوي</button>
+<div class="stats" id="stats"></div>
 
-<div id="stats" class="stats"></div>
-
-<!-- ADD -->
-<div id="add" style="display:none">
-<input id="name" placeholder="اسم اللاعب"><br>
-<input id="birth" type="date"><br>
-
-<select id="cat">
-<option>U8</option>
-<option>U10</option>
-<option>U12</option>
-<option>U15</option>
-<option>U17</option>
-</select><br>
-
-<select id="exempt">
-<option value="no">عادي</option>
-<option value="yes">معفى</option>
-</select><br>
-
-<button onclick="save()">💾 حفظ</button>
-</div>
-
-<!-- MONTHLY -->
-<div id="monthly"></div>
-
-<!-- YEARLY -->
-<div id="yearly"></div>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>الاسم</th>
+<th>شهري</th>
+<th>سنوي</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, update } 
+import { getDatabase, ref, onValue, update } 
 from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -119,48 +101,46 @@ const db = getDatabase(app);
 
 let data = {};
 let season = "2025/2026";
+let currentMonth = "09";
 
-const months=["09","10","11","12","01","02","03","04","05","06","07"];
+const monthsArr=["09","10","11","12","01","02","03","04","05","06","07"];
 
-// CHANGE SEASON
-window.changeSeason = ()=>{
-  season = seasonSelect.value;
+// رسم الأشهر
+function renderMonths(){
+  let html="";
+  monthsArr.forEach(m=>{
+    html+=`<button class="month ${m==currentMonth?"activeMonth":""}"
+    onclick="selectMonth('${m}')">${m}</button>`;
+  });
+  document.getElementById("months").innerHTML=html;
+}
+
+window.selectMonth = (m)=>{
+  currentMonth = m;
+  renderMonths();
   render();
 };
 
-// LOAD
+// تغيير الموسم
+window.changeSeason = ()=>{
+  season = document.getElementById("season").value;
+  render();
+};
+
+// تحميل البيانات
 onValue(ref(db,"players"),snap=>{
   data = snap.val() || {};
+  renderMonths();
   render();
 });
 
-// SAVE PLAYER
-window.save = ()=>{
-  let name = nameInput.value;
-
-  for(let id in data){
-    if(data[id].name == name){
-      alert("⚠️ اللاعب موجود");
-      return;
-    }
-  }
-
-  push(ref(db,"players"),{
-    name,
-    birth:birth.value,
-    cat:cat.value,
-    exempt:exempt.value,
-    seasons:{}
-  });
-
-  alert("تمت الإضافة");
-};
-
-// RENDER
+// رسم الجدول
 function render(){
 
-let mHTML="", yHTML="";
-let paidCount=0, total=0;
+let html="";
+let i=1;
+let total=0;
+let paid=0;
 
 for(let id in data){
   let p=data[id];
@@ -170,71 +150,55 @@ for(let id in data){
 
   let s = p.seasons[season];
 
-  // MONTHS
-  let m="";
-  if(p.exempt=="yes"){
-    m="🚫 معفى";
-  }else{
-    months.forEach(mon=>{
-      let paid = s.months?.[mon]=="yes";
-      if(paid) paidCount++;
+  let mPaid = s.months?.[currentMonth]=="yes";
+  let yPaid = s.yearly=="yes";
 
-      m+=`<button class="month ${paid?"green":"red"}"
-      onclick="toggleM('${id}','${mon}')">${mon}</button>`;
-    });
+  if(mPaid) total+=100;
+  if(yPaid) total+=500;
 
-    total += Object.values(s.months||{}).filter(v=>v=="yes").length * 100;
-  }
+  if(mPaid || yPaid) paid++;
 
-  mHTML+=`<div class="card">${p.name}<br>${m}</div>`;
+  html+=`
+  <tr>
+    <td>${i++}</td>
+    <td>${p.name}</td>
 
-  // YEARLY
-  let y="";
-  if(p.exempt=="yes"){
-    y="🚫 معفى";
-  }else{
-    if(s.yearly=="yes"){paidCount++; total+=500;}
-    y=`<button onclick="toggleY('${id}')">
-    ${s.yearly=="yes"?"✔️":"❌"}
-    </button>`;
-  }
+    <td onclick="toggleM('${id}')">
+      <span class="${mPaid?"green":"red"}">
+        ${mPaid?"✅":"❌"}
+      </span>
+    </td>
 
-  yHTML+=`<div class="card">${p.name}<br>${y}</div>`;
+    <td onclick="toggleY('${id}')">
+      <span class="${yPaid?"green":"red"}">
+        ${yPaid?"✅":"❌"}
+      </span>
+    </td>
+  </tr>
+  `;
 }
 
-// STATS
-document.getElementById("stats").innerHTML = `
+document.getElementById("table").innerHTML=html;
+
+document.getElementById("stats").innerHTML=`
 💰 المجموع: ${total} درهم <br>
-✅ المؤدين: ${paidCount}
+👥 المؤدين: ${paid}
 `;
-
-monthly.innerHTML=mHTML;
-yearly.innerHTML=yHTML;
 }
 
-// TOGGLE MONTH
-window.toggleM=(id,m)=>{
-  let path = `players/${id}/seasons/${season}/months/${m}`;
-  let current = data[id].seasons?.[season]?.months?.[m];
-  update(ref(db,path), current=="yes"?"no":"yes");
-}
+// تبديل شهري
+window.toggleM = (id)=>{
+  let current = data[id].seasons?.[season]?.months?.[currentMonth];
+  update(ref(db,`players/${id}/seasons/${season}/months/${currentMonth}`),
+  current=="yes"?"no":"yes");
+};
 
-// TOGGLE YEAR
-window.toggleY=id=>{
+// تبديل سنوي
+window.toggleY = (id)=>{
   let current = data[id].seasons?.[season]?.yearly;
-  update(ref(db,`players/${id}/seasons/${season}`),{
-    yearly: current=="yes"?"no":"yes"
-  });
-}
-
-// NAV
-window.show = (s)=>{
-  add.style.display="none";
-  monthly.style.display="none";
-  yearly.style.display="none";
-
-  document.getElementById(s).style.display="block";
-}
+  update(ref(db,`players/${id}/seasons/${season}`),
+  {yearly: current=="yes"?"no":"yes"});
+};
 
 </script>
 
