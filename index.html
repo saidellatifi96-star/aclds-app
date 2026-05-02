@@ -2,12 +2,32 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>ACLDs</title>
+<title>ACLDs Login</title>
 
 <style>
-body{background:#111;color:white;text-align:center;font-family:Arial}
-input{padding:10px;margin:5px;border-radius:8px;border:none}
-button{padding:10px;border:none;border-radius:8px;background:#22c55e;color:black}
+body{
+  background:#000;
+  color:white;
+  text-align:center;
+  font-family:Arial;
+}
+
+input{
+  padding:12px;
+  margin:8px;
+  width:250px;
+  border-radius:10px;
+  border:none;
+}
+
+button{
+  padding:12px 20px;
+  border:none;
+  border-radius:10px;
+  background:#16a34a;
+  color:white;
+  cursor:pointer;
+}
 </style>
 </head>
 
@@ -17,6 +37,7 @@ button{padding:10px;border:none;border-radius:8px;background:#22c55e;color:black
 
 <input id="email" placeholder="Email"><br>
 <input id="password" type="password" placeholder="Password"><br>
+
 <button id="loginBtn">دخول</button>
 
 <script type="module">
@@ -28,22 +49,32 @@ from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
   authDomain: "aclds-app.firebaseapp.com",
-  projectId: "aclds-app"
+  projectId: "aclds-app",
+  databaseURL: "https://aclds-app-default-rtdb.firebaseio.com"
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth();
+const auth = getAuth(app);
 
-document.getElementById("loginBtn").onclick = ()=>{
-  alert("تم الضغط 👍");
+document.getElementById("loginBtn").addEventListener("click", function(){
 
-  const email = document.getElementById("email").value;
-  const pass = document.getElementById("password").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-  signInWithEmailAndPassword(auth, email, pass)
-  .then(()=> alert("تم تسجيل الدخول ✅"))
-  .catch(e=> alert(e.message));
-}
+  if(!email || !password){
+    alert("عمر الخانات ❗");
+    return;
+  }
+
+  signInWithEmailAndPassword(auth, email, password)
+  .then(()=>{
+    alert("تم تسجيل الدخول ✅");
+  })
+  .catch((error)=>{
+    alert(error.message);
+  });
+
+});
 
 </script>
 
