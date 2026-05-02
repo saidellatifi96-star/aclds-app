@@ -2,79 +2,84 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>ACLDs PRO</title>
+<title>ACLDs PRO MAX</title>
 
 <style>
 body{
   margin:0;
   font-family:Arial;
-  background:black;
+  background:#0a0a0a;
   color:white;
   text-align:center;
 }
 
-input,select{
-  padding:12px;
-  margin:8px;
-  width:85%;
-  border-radius:10px;
-  border:none;
-}
+h1{margin:20px}
 
 button{
-  padding:10px;
+  padding:12px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
   margin:5px;
   cursor:pointer;
 }
 
-.main{background:#00c853;color:white;width:80%}
-.card{background:#222;margin:10px;padding:15px;border-radius:10px}
-
-.ok{color:#00ff88}
-.no{color:red}
-.exempt{color:orange}
-
-.logout{
-  position:fixed;
-  bottom:10px;
-  left:10px;
-  background:red;
+.main{
+  width:90%;
+  background:#00c853;
   color:white;
+  font-size:16px;
+}
+
+.card{
+  background:#1e1e1e;
+  margin:10px;
+  padding:15px;
+  border-radius:12px;
+}
+
+.month{
+  padding:8px;
+  margin:3px;
+  border-radius:8px;
+  font-size:12px;
+}
+
+.green{background:#00c853}
+.red{background:#c62828}
+
+.stats{
+  background:#111;
+  padding:10px;
+  margin:10px;
+  border-radius:10px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="loginBox">
-<h2>🔐 تسجيل الدخول</h2>
-<input id="email" placeholder="Email"><br>
-<input id="password" type="password" placeholder="Password"><br>
-<button id="loginBtn">دخول</button>
-</div>
-
-<!-- APP -->
-<div id="appBox" style="display:none">
-
 <h1>⚽ ACLDs</h1>
 
-<button class="main" onclick="go('add')">➕ إضافة لاعب</button><br>
-<button class="main" onclick="go('players')">📋 اللاعبين</button><br>
-<button class="main" onclick="go('monthly')">💰 شهري</button><br>
-<button class="main" onclick="go('yearly')">📅 سنوي</button>
+<select id="seasonSelect" onchange="changeSeason()">
+<option>2025/2026</option>
+<option>2026/2027</option>
+<option>2027/2028</option>
+</select>
 
-<button class="logout" onclick="logout()">🚪 خروج</button>
+<br><br>
+
+<button class="main" onclick="show('add')">➕ إضافة لاعب</button>
+<button class="main" onclick="show('monthly')">💰 الشهري</button>
+<button class="main" onclick="show('yearly')">📅 السنوي</button>
+
+<div id="stats" class="stats"></div>
 
 <!-- ADD -->
 <div id="add" style="display:none">
-<h2>➕ لاعب</h2>
-<input id="name" placeholder="الاسم"><br>
+<input id="name" placeholder="اسم اللاعب"><br>
 <input id="birth" type="date"><br>
 
-<select id="category">
+<select id="cat">
 <option>U8</option>
 <option>U10</option>
 <option>U12</option>
@@ -90,33 +95,15 @@ button{
 <button onclick="save()">💾 حفظ</button>
 </div>
 
-<!-- PLAYERS -->
-<div id="players" style="display:none">
-<h2>📋 اللاعبين</h2>
-<input id="search" placeholder="بحث..." onkeyup="searchPlayer()">
-<div id="list"></div>
-</div>
-
 <!-- MONTHLY -->
-<div id="monthly" style="display:none">
-<h2>💰 الشهري</h2>
-<div id="monthlyList"></div>
-</div>
+<div id="monthly"></div>
 
 <!-- YEARLY -->
-<div id="yearly" style="display:none">
-<h2>📅 السنوي</h2>
-<div id="yearlyList"></div>
-</div>
-
-</div>
+<div id="yearly"></div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
-from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-
 import { getDatabase, ref, push, onValue, update } 
 from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
@@ -128,59 +115,28 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getDatabase(app);
 
 let data = {};
+let season = "2025/2026";
 
-// 🔥 LOGIN FIX
-const loginBtn = document.getElementById("loginBtn");
+const months=["09","10","11","12","01","02","03","04","05","06","07"];
 
-loginBtn.addEventListener("click", ()=>{
-
-  const email = document.getElementById("email").value.trim();
-  const pass = document.getElementById("password").value.trim();
-
-  if(!email || !pass){
-    alert("عمر المعلومات ❗");
-    return;
-  }
-
-  signInWithEmailAndPassword(auth, email, pass)
-  .then(()=> alert("تم تسجيل الدخول ✅"))
-  .catch(e=> alert(e.message));
-});
-
-// LOGOUT
-window.logout = ()=> signOut(auth);
-
-// STATE
-onAuthStateChanged(auth,user=>{
-  document.getElementById("loginBox").style.display = user?"none":"block";
-  document.getElementById("appBox").style.display = user?"block":"none";
-
-  if(user) load();
-});
-
-// NAV
-window.go = (page)=>{
-  ["add","players","monthly","yearly"].forEach(p=>{
-    document.getElementById(p).style.display="none";
-  });
-  document.getElementById(page).style.display="block";
+// CHANGE SEASON
+window.changeSeason = ()=>{
+  season = seasonSelect.value;
+  render();
 };
 
 // LOAD
-function load(){
-  onValue(ref(db,"players"),snap=>{
-    data = snap.val() || {};
-    render();
-  });
-}
+onValue(ref(db,"players"),snap=>{
+  data = snap.val() || {};
+  render();
+});
 
-// SAVE
+// SAVE PLAYER
 window.save = ()=>{
-  let name = document.getElementById("name").value;
+  let name = nameInput.value;
 
   for(let id in data){
     if(data[id].name == name){
@@ -192,10 +148,9 @@ window.save = ()=>{
   push(ref(db,"players"),{
     name,
     birth:birth.value,
-    category:category.value,
+    cat:cat.value,
     exempt:exempt.value,
-    yearly:"no",
-    months:{}
+    seasons:{}
   });
 
   alert("تمت الإضافة");
@@ -204,62 +159,81 @@ window.save = ()=>{
 // RENDER
 function render(){
 
-  let listHTML="", mHTML="", yHTML="";
-  const months=["09","10","11","12","01","02","03","04","05","06","07"];
+let mHTML="", yHTML="";
+let paidCount=0, total=0;
 
-  for(let id in data){
-    let p=data[id];
+for(let id in data){
+  let p=data[id];
 
-    listHTML+=`<div class="card">${p.name}</div>`;
+  if(!p.seasons) p.seasons={};
+  if(!p.seasons[season]) p.seasons[season]={months:{},yearly:"no"};
 
-    let m="";
-    if(p.exempt=="yes"){
-      m="🚫 معفى";
-    }else{
-      months.forEach(mon=>{
-        let paid = p.months?.[mon]=="yes";
-        m+=`<button style="background:${paid?"green":"red"}"
-        onclick="toggleM('${id}','${mon}')">${mon}</button>`;
-      });
-    }
+  let s = p.seasons[season];
 
-    mHTML+=`<div class="card">${p.name}<br>${m}</div>`;
+  // MONTHS
+  let m="";
+  if(p.exempt=="yes"){
+    m="🚫 معفى";
+  }else{
+    months.forEach(mon=>{
+      let paid = s.months?.[mon]=="yes";
+      if(paid) paidCount++;
 
-    yHTML+=`<div class="card">
-    ${p.name}<br>
-    ${p.exempt=="yes"?"🚫 معفى":
-    `<button onclick="toggleY('${id}')">
-    ${p.yearly=="yes"?"✔️":"❌"}
-    </button>`}
-    </div>`;
+      m+=`<button class="month ${paid?"green":"red"}"
+      onclick="toggleM('${id}','${mon}')">${mon}</button>`;
+    });
+
+    total += Object.values(s.months||{}).filter(v=>v=="yes").length * 100;
   }
 
-  list.innerHTML=listHTML;
-  monthlyList.innerHTML=mHTML;
-  yearlyList.innerHTML=yHTML;
+  mHTML+=`<div class="card">${p.name}<br>${m}</div>`;
+
+  // YEARLY
+  let y="";
+  if(p.exempt=="yes"){
+    y="🚫 معفى";
+  }else{
+    if(s.yearly=="yes"){paidCount++; total+=500;}
+    y=`<button onclick="toggleY('${id}')">
+    ${s.yearly=="yes"?"✔️":"❌"}
+    </button>`;
+  }
+
+  yHTML+=`<div class="card">${p.name}<br>${y}</div>`;
 }
 
-// PAY
+// STATS
+document.getElementById("stats").innerHTML = `
+💰 المجموع: ${total} درهم <br>
+✅ المؤدين: ${paidCount}
+`;
+
+monthly.innerHTML=mHTML;
+yearly.innerHTML=yHTML;
+}
+
+// TOGGLE MONTH
 window.toggleM=(id,m)=>{
-  let val = data[id].months?.[m]=="yes"?"no":"yes";
-  update(ref(db,"players/"+id+"/months/"+m), val);
+  let path = `players/${id}/seasons/${season}/months/${m}`;
+  let current = data[id].seasons?.[season]?.months?.[m];
+  update(ref(db,path), current=="yes"?"no":"yes");
 }
 
+// TOGGLE YEAR
 window.toggleY=id=>{
-  let v=data[id].yearly=="yes"?"no":"yes";
-  update(ref(db,"players/"+id),{yearly:v});
+  let current = data[id].seasons?.[season]?.yearly;
+  update(ref(db,`players/${id}/seasons/${season}`),{
+    yearly: current=="yes"?"no":"yes"
+  });
 }
 
-// SEARCH
-window.searchPlayer=()=>{
-  let v=search.value.toLowerCase();
-  let html="";
-  for(let id in data){
-    if(data[id].name.toLowerCase().includes(v)){
-      html+=`<div class="card">${data[id].name}</div>`;
-    }
-  }
-  list.innerHTML=html;
+// NAV
+window.show = (s)=>{
+  add.style.display="none";
+  monthly.style.display="none";
+  yearly.style.display="none";
+
+  document.getElementById(s).style.display="block";
 }
 
 </script>
