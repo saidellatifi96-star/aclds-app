@@ -2,229 +2,47 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>ACLDs FINAL</title>
+<title>ACLDs</title>
 
 <style>
-body{
-  background:#0f172a;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-}
-
-.container{
-  max-width:400px;
-  margin:auto;
-}
-
-input,select{
-  width:90%;
-  padding:10px;
-  margin:6px;
-  border-radius:10px;
-  border:none;
-}
-
-button{
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  margin:5px;
-  cursor:pointer;
-}
-
-.card{
-  background:#1e293b;
-  padding:10px;
-  margin:10px;
-  border-radius:10px;
-}
-
-.ok{color:#22c55e}
-.no{color:red}
+body{background:#111;color:white;text-align:center;font-family:Arial}
+input{padding:10px;margin:5px;border-radius:8px;border:none}
+button{padding:10px;border:none;border-radius:8px;background:#22c55e;color:black}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<h2>تسجيل الدخول</h2>
 
-<h2>⚽ ACLDs</h2>
-
-<!-- LOGIN -->
-<div id="loginBox">
-  <input id="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
-  <button id="loginBtn">دخول</button>
-</div>
-
-<!-- APP -->
-<div id="appBox" style="display:none">
-
-<button id="logoutBtn">خروج</button>
-
-<h3>➕ إضافة لاعب</h3>
-
-<input id="nom" placeholder="اسم اللاعب">
-<input id="age" type="number" placeholder="العمر">
-
-<select id="categorie">
-<option>U10</option>
-<option>U12</option>
-<option>U15</option>
-<option>U17</option>
-</select>
-
-<input type="date" id="date">
-
-<input id="image" placeholder="رابط صورة">
-
-<select id="mensuel">
-<option value="yes">خالص شهري</option>
-<option value="no">مازال</option>
-</select>
-
-<select id="annuel">
-<option value="yes">خالص سنوي</option>
-<option value="no">مازال</option>
-</select>
-
-<button id="saveBtn">حفظ</button>
-
-<hr>
-
-<input id="search" placeholder="بحث...">
-
-<div id="list"></div>
-
-</div>
-
-</div>
+<input id="email" placeholder="Email"><br>
+<input id="password" type="password" placeholder="Password"><br>
+<button id="loginBtn">دخول</button>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
+import { getAuth, signInWithEmailAndPassword } 
 from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-
-import { getDatabase, ref, push, onValue } 
-from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYgnrlmzmffzqvIfCfzngd9KMaWMhcDKc",
   authDomain: "aclds-app.firebaseapp.com",
-  databaseURL: "https://aclds-app-default-rtdb.firebaseio.com",
   projectId: "aclds-app"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
-const db = getDatabase();
 
-let data = {};
+document.getElementById("loginBtn").onclick = ()=>{
+  alert("تم الضغط 👍");
 
-// عناصر
-const loginBox = document.getElementById("loginBox");
-const appBox = document.getElementById("appBox");
+  const email = document.getElementById("email").value;
+  const pass = document.getElementById("password").value;
 
-const email = document.getElementById("email");
-const password = document.getElementById("password");
-
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const saveBtn = document.getElementById("saveBtn");
-
-// LOGIN
-loginBtn.onclick = ()=>{
-  signInWithEmailAndPassword(auth, email.value, password.value)
-  .then(()=> alert("تم الدخول ✅"))
+  signInWithEmailAndPassword(auth, email, pass)
+  .then(()=> alert("تم تسجيل الدخول ✅"))
   .catch(e=> alert(e.message));
-}
-
-// LOGOUT
-logoutBtn.onclick = ()=> signOut(auth);
-
-// STATE
-onAuthStateChanged(auth,user=>{
-  if(user){
-    loginBox.style.display="none";
-    appBox.style.display="block";
-    load();
-  } else {
-    loginBox.style.display="block";
-    appBox.style.display="none";
-  }
-});
-
-// LOAD
-function load(){
-  onValue(ref(db,"joueurs"), snap=>{
-    data = snap.val() || {};
-    render(data);
-  });
-}
-
-// SAVE
-saveBtn.onclick = ()=>{
-  const player = {
-    nom: nom.value,
-    age: age.value,
-    categorie: categorie.value,
-    date: date.value,
-    image: image.value,
-    mensuel: mensuel.value,
-    annuel: annuel.value
-  };
-
-  push(ref(db,"joueurs"), player);
-
-  alert("تمت الإضافة");
-
-  nom.value="";
-  age.value="";
-}
-
-// RENDER
-function render(obj){
-  list.innerHTML="";
-
-  for(let id in obj){
-    let j=obj[id];
-
-    list.innerHTML += `
-    <div class="card">
-      <img src="${j.image || 'https://via.placeholder.com/60'}" width="60"><br>
-      <b>${j.nom}</b><br>
-      ${j.age} سنة<br>
-      ${j.categorie}<br>
-      ${j.date || ''}<br>
-
-      شهري:
-      <span class="${j.mensuel=='yes'?'ok':'no'}">
-      ${j.mensuel=='yes'?'✔':'❌'}
-      </span><br>
-
-      سنوي:
-      <span class="${j.annuel=='yes'?'ok':'no'}">
-      ${j.annuel=='yes'?'✔':'❌'}
-      </span>
-    </div>
-    `;
-  }
-}
-
-// SEARCH
-document.getElementById("search").onkeyup = ()=>{
-  let v = search.value.toLowerCase();
-  let f={};
-
-  for(let id in data){
-    if(data[id].nom.toLowerCase().includes(v)){
-      f[id]=data[id];
-    }
-  }
-
-  render(f);
 }
 
 </script>
