@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+
+<style>
+body{background:#0f0f0f;color:white;text-align:center;}
+input,select,button{
+padding:12px;
+margin:10px;
+width:80%;
+border-radius:10px;
+border:none;
+}
+button{background:#00c853;color:white;}
+</style>
+</head>
+
+<body>
+
+<h2>➕ إضافة لاعب</h2>
+
+<input id="name" placeholder="اسم اللاعب">
+
+<select id="category">
+<option>U6</option>
+<option>U8</option>
+<option>U10</option>
+<option>U12</option>
+<option>U14</option>
+<option>U16</option>
+<option>U18</option>
+</select>
+
+<button onclick="save()">💾 حفظ</button>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSy...",
+authDomain: "aclds-app.firebaseapp.com",
+databaseURL: "https://aclds-app-default-rtdb.firebaseio.com",
+projectId: "aclds-app",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let players = {};
+
+onValue(ref(db,"players"),snap=>{
+    players = snap.val() || {};
+});
+
+window.save = ()=>{
+
+    let name = document.getElementById("name").value;
+    let category = document.getElementById("category").value;
+
+    if(!name) return alert("دخل الاسم");
+
+    // ❌ منع التكرار
+    let exists = Object.values(players).find(p=>p.name===name);
+    if(exists){
+        alert("اللاعب موجود مسبقاً");
+        return;
+    }
+
+    push(ref(db,"players"),{
+        name:name,
+        category:category
+    });
+
+    alert("تمت الإضافة");
+    document.getElementById("name").value="";
+}
+
+</script>
+
+</body>
+</html>
