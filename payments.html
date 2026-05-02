@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>الواجبات</title>
+
+<style>
+body{background:#0f0f0f;color:white;text-align:center;font-family:Arial;}
+
+select,button{
+padding:10px;
+margin:5px;
+border-radius:10px;
+border:none;
+}
+
+.months button{
+padding:8px;
+margin:3px;
+border-radius:8px;
+background:#333;
+color:white;
+}
+
+.active{background:#00c853;}
+
+table{
+width:95%;
+margin:auto;
+border-collapse:collapse;
+}
+
+td,th{
+border-bottom:1px solid #333;
+padding:10px;
+}
+
+.ok{color:#00c853;font-size:20px;}
+.no{color:red;font-size:20px;}
+</style>
+</head>
+
+<body>
+
+<h2>💰 الواجبات</h2>
+
+<!-- الموسم -->
+<select id="season">
+<option>2025/2026</option>
+<option>2026/2027</option>
+<option>2027/2028</option>
+</select>
+
+<!-- الأشهر -->
+<div class="months" id="months"></div>
+
+<h3 id="stats">المجموع: 0 درهم | المؤدين: 0</h3>
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>الاسم</th>
+<th>شهري</th>
+<th>سنوي</th>
+</tr>
+</thead>
+
+<tbody id="list"></tbody>
+</table>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSy...",
+authDomain: "aclds-app.firebaseapp.com",
+databaseURL: "https://aclds-app-default-rtdb.firebaseio.com",
+projectId: "aclds-app",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let players = {};
+let selectedMonth = "09";
+let selectedSeason = "2025/2026";
+
+const months = ["09","10","11","12","01","02","03","04","05","06","07"];
+
+function renderMonths(){
+    let html="";
+    months.forEach(m=>{
+        html+=`<button class="${m==selectedMonth?"active":""}" onclick="setMonth('${m}')">${m}</button>`;
+    });
+    document.getElementById("months").innerHTML = html;
+}
+
+window.setMonth = (m)=>{
+    selectedMonth = m;
+    renderMonths();
+    render();
+}
+
+document.getElementById("season").onchange = (e)=>{
+    selectedSeason = e.target.value;
+    render();
+}
+
+onValue(ref(db,"players"),snap=>{
+    players = snap.val() || {};
+    render();
+});
+
+function render(){
+
+    let html="";
+    let total=0;
+    let paidCount=0;
+    let i=1;
+
+    Object.keys(players).forEach(id=>{
+
+        let p = players[id];
+
+        let monthly = p.payments?.[selectedSeason]?.[selectedMonth] || false;
+        let yearly = p.yearly?.[selectedSeason] || false;
+
+        if(monthly) total += 100; // تقدر تبدل الثمن
+        if(monthly) paidCount++;
+
+        html+=`
+        <tr>
+        <td>${i++}</td>
+        <td>${p.name}</td>
+
+        <td onclick="toggleMonthly('${id}')">
+            <span class="${monthly?"ok":"no"}">
+            ${monthly?"✅":"❌"}
+            </span>
+        </td>
+
+        <td onclick="toggleYearly('${id}')">
+            <span class="${yearly?"ok":"no"}">
+            ${yearly?"✅":"❌"}
+            </span>
+        </td>
+
+        </tr>
+        `;
+    });
+
+    document.getElementById("list").innerHTML = html;
+    document.getElementById("stats").innerHTML =
+    `💰 المجموع: ${total} درهم | 👥 المؤدين: ${paidCount}`;
+}
+
+window.toggleMonthly = (id)=>{
+
+    let current = players[id].payments?.[selectedSeason]?.[selectedMonth] || false;
+
+    update(ref(db,"players/"+id+"/payments/"+selectedSeason+"/"+selectedMonth), !current);
+}
+
+window.toggleYearly = (id)=>{
+
+    let current = players[id].yearly?.[selectedSeason] || false;
+
+    update(ref(db,"players/"+id+"/yearly/"+selectedSeason), !current);
+}
+
+renderMonths();
+
+</script>
+
+</body>
+</html>
